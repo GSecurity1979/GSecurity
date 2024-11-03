@@ -9,6 +9,68 @@ DEL /F /Q "%temp%\uac.vbs"
 setlocal EnableExtensions DisableDelayedExpansion
 
 :: ----------------------------------------------------------
+:: ---------------------Malware Removal----------------------
+:: ----------------------------------------------------------
+
+
+:: Define file paths and services
+set "filesToDelete=C:\Windows\Microsoft.NET\Framework\v4.0.30319\ngen.exe C:\Windows\System32\dbghelp.dll C:\Windows\System32\xinput.sys C:\Windows\System32\wbem\wmiprvse.exe"
+set "servicesToStop=YourServiceName1 YourServiceName2"  :: Replace with actual service names
+
+:: Function to stop services
+echo Stopping services...
+for %%s in (%servicesToStop%) do (
+    sc query %%s | findstr /i "RUNNING" >nul
+    if not errorlevel 1 (
+        echo Stopping service %%s...
+        sc stop %%s
+        timeout /t 2 >nul  :: Wait for the service to stop
+    ) else (
+        echo Service %%s is not running.
+    )
+)
+
+:: Function to terminate processes
+echo Terminating processes...
+for %%f in (%filesToDelete%) do (
+    tasklist | findstr /i %%~nxf >nul
+    if not errorlevel 1 (
+        echo Terminating %%~nxf...
+        taskkill /f /im %%~nxf
+    ) else (
+        echo %%~nxf is not running.
+    )
+)
+
+:: Wait for a moment to ensure processes are terminated
+timeout /t 2 >nul
+
+:: Attempt to delete files with permission changes
+for %%f in (%filesToDelete%) do (
+    if exist %%f (
+        echo Taking ownership of %%f...
+        takeown /f %%f >nul
+        
+        echo Setting temporary permissions for deletion on %%f...
+        icacls %%f /grant "%USERNAME%":(D) >nul
+
+        echo Deleting %%f...
+        del /f /q %%f
+        if errorlevel 1 (
+            echo Failed to delete %%f
+        ) else (
+            echo Successfully deleted %%f
+        )
+        
+        echo Restoring permissions for %%f...
+        icacls %%f /remove "%USERNAME%" >nul
+    ) else (
+        echo %%f does not exist
+    )
+)
+
+
+:: ----------------------------------------------------------
 :: ------------------------Hardening-------------------------
 :: ----------------------------------------------------------
 
@@ -490,65 +552,9 @@ PowerShell -ExecutionPolicy Unrestricted -Command "$data = '0'; reg add 'HKLM\SO
 
 
 :: ----------------------------------------------------------
-:: ---------------------Malware Removal----------------------
+:: ------------------------Debloat---------------------------
 :: ----------------------------------------------------------
 
-
-:: Define file paths and services
-set "filesToDelete=C:\Windows\Microsoft.NET\Framework\v4.0.30319\ngen.exe C:\Windows\System32\dbghelp.dll C:\Windows\System32\xinput.sys C:\Windows\System32\wbem\wmiprvse.exe"
-set "servicesToStop=YourServiceName1 YourServiceName2"  :: Replace with actual service names
-
-:: Function to stop services
-echo Stopping services...
-for %%s in (%servicesToStop%) do (
-    sc query %%s | findstr /i "RUNNING" >nul
-    if not errorlevel 1 (
-        echo Stopping service %%s...
-        sc stop %%s
-        timeout /t 2 >nul  :: Wait for the service to stop
-    ) else (
-        echo Service %%s is not running.
-    )
-)
-
-:: Function to terminate processes
-echo Terminating processes...
-for %%f in (%filesToDelete%) do (
-    tasklist | findstr /i %%~nxf >nul
-    if not errorlevel 1 (
-        echo Terminating %%~nxf...
-        taskkill /f /im %%~nxf
-    ) else (
-        echo %%~nxf is not running.
-    )
-)
-
-:: Wait for a moment to ensure processes are terminated
-timeout /t 2 >nul
-
-:: Attempt to delete files with permission changes
-for %%f in (%filesToDelete%) do (
-    if exist %%f (
-        echo Taking ownership of %%f...
-        takeown /f %%f >nul
-        
-        echo Setting temporary permissions for deletion on %%f...
-        icacls %%f /grant "%USERNAME%":(D) >nul
-
-        echo Deleting %%f...
-        del /f /q %%f
-        if errorlevel 1 (
-            echo Failed to delete %%f
-        ) else (
-            echo Successfully deleted %%f
-        )
-        
-        echo Restoring permissions for %%f...
-        icacls %%f /remove "%USERNAME%" >nul
-    ) else (
-        echo %%f does not exist
-    )
-)
 
 :: ----------------------------------------------------------
 :: --------------Remove insecure "Print 3D" app--------------
