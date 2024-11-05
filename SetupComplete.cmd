@@ -11,4 +11,8 @@ cd /d %~dp0
 cd Bin
 
 :: Install Policies
-lgpo /g ./
+lgpo /s GSecurity.inf
+
+:: Import Registry
+Reg import MachinePolicy.reg
+Reg import UserPolicy.reg
