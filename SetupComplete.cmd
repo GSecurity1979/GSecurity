@@ -1,4 +1,5 @@
 @echo off
+Title GSecurity && color 0b
 
 :: Elevate
 >nul 2>&1 fsutil dirty query %systemdrive% || echo CreateObject^("Shell.Application"^).ShellExecute "%~0", "ELEVATED", "", "runas", 1 > "%temp%\uac.vbs" && "%temp%\uac.vbs" && exit /b
@@ -14,5 +15,6 @@ cd Bin
 lgpo /s GSecurity.inf
 
 :: Import Registry
-Reg import MachinePolicy.reg
-Reg import UserPolicy.reg
+for /f "tokens=*" %%A in ('dir /b /o:n *.reg') do (
+    reg import "%%A"
+)
