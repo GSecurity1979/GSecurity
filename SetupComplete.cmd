@@ -12,9 +12,4 @@ cd /d %~dp0
 cd Bin
 
 :: Install Policies
-lgpo /s GSecurity.inf
-
-:: Import Registry
-for /f "tokens=*" %%A in ('dir /b /o:n *.reg') do (
-    reg import "%%A"
-)
+lgpo /g ./
