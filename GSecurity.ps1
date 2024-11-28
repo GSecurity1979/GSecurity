@@ -2,8 +2,8 @@
     Script Name: GSecurity
     Author: Gorstak
     Description: Advanced script to detect and mitigate web servers, screen overlays, and keyloggers. 
-                 Protects critical system processes from termination.
-    Version: 1.1
+                 Protects critical system processes and specific trusted drivers from termination.
+    Version: 1.2
     License: Free for personal use
 #>
 
@@ -31,6 +31,15 @@ $protectedProcesses = @(
     "conhost",    # Console Window Host
     "cmd",        # Command Prompt
     "powershell"  # PowerShell itself
+)
+
+# Trusted driver vendors to exclude from termination
+$trustedDriverVendors = @(
+    "*Microsoft*",  # Microsoft drivers
+    "*NVIDIA*",     # NVIDIA GPU drivers
+    "*Intel*",      # Intel drivers
+    "*AMD*",        # AMD GPU and CPU drivers
+    "*Realtek*"     # Realtek audio/network drivers
 )
 
 # Detect and terminate web servers
@@ -89,7 +98,7 @@ function Detect-And-Terminate-Keyloggers {
 # Detect and terminate untrusted drivers
 function Detect-And-Terminate-SuspiciousDrivers {
     $drivers = Get-WmiObject Win32_SystemDriver | Where-Object {
-        $_.DisplayName -notlike "*Microsoft*" -and $_.Started -eq $true
+        ($_.DisplayName -notlike $trustedDriverVendors) -and $_.Started -eq $true
     }
     foreach ($driver in $drivers) {
         Write-Log "Suspicious driver detected: $($driver.DisplayName)"
